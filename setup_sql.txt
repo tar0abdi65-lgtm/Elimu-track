@@ -1,0 +1,113 @@
+-- =====================================================
+--  ElimuTrack – Supabase Database Setup SQL
+--  Run this in: Supabase → SQL Editor → New Query
+-- =====================================================
+
+-- 1. USERS (admins + teachers)
+create table if not exists users (
+  id uuid default gen_random_uuid() primary key,
+  username text unique not null,
+  password text not null,
+  role text not null default 'teacher',
+  name text not null,
+  phone text default '',
+  subjects text[] default '{}',
+  classes text[] default '{}',
+  created_at timestamptz default now()
+);
+
+-- 2. STUDENTS
+create table if not exists students (
+  id uuid default gen_random_uuid() primary key,
+  adm text not null,
+  name text not null,
+  cls text not null,
+  stream text default '',
+  gender text default 'Male',
+  dob text default '',
+  guardian text default '',
+  contact text default '',
+  created_at timestamptz default now()
+);
+
+-- 3. SUBJECTS
+create table if not exists subjects (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  code text not null,
+  teacher_username text default '',
+  classes text[] default '{}',
+  created_at timestamptz default now()
+);
+
+-- 4. SCORES
+create table if not exists scores (
+  id uuid default gen_random_uuid() primary key,
+  student_id uuid references students(id) on delete cascade,
+  subject_id uuid references subjects(id) on delete cascade,
+  term text not null,
+  mark numeric not null,
+  saved_by text default '',
+  created_at timestamptz default now()
+);
+
+-- 5. ACTIVITY LOG
+create table if not exists activity (
+  id uuid default gen_random_uuid() primary key,
+  message text not null,
+  user_name text default 'System',
+  created_at timestamptz default now()
+);
+
+-- 6. CONFIG (school info)
+create table if not exists config (
+  id uuid default gen_random_uuid() primary key,
+  key text unique not null,
+  value jsonb
+);
+
+-- 7. PHOTOS (student photos as base64)
+create table if not exists photos (
+  id uuid default gen_random_uuid() primary key,
+  student_id uuid unique references students(id) on delete cascade,
+  data text
+);
+
+-- 8. REMARKS (report card remarks)
+create table if not exists remarks (
+  id uuid default gen_random_uuid() primary key,
+  rkey text unique not null,
+  ct text default '',
+  pr text default ''
+);
+
+-- =====================================================
+--  ENABLE REALTIME (run each line separately)
+-- =====================================================
+alter publication supabase_realtime add table students;
+alter publication supabase_realtime add table users;
+alter publication supabase_realtime add table subjects;
+alter publication supabase_realtime add table scores;
+alter publication supabase_realtime add table activity;
+
+-- =====================================================
+--  ROW LEVEL SECURITY – Allow all access (simple mode)
+--  For a school app this is fine. Tighten later if needed.
+-- =====================================================
+alter table users     enable row level security;
+alter table students  enable row level security;
+alter table subjects  enable row level security;
+alter table scores    enable row level security;
+alter table activity  enable row level security;
+alter table config    enable row level security;
+alter table photos    enable row level security;
+alter table remarks   enable row level security;
+
+create policy "Allow all" on users     for all using (true) with check (true);
+create policy "Allow all" on students  for all using (true) with check (true);
+create policy "Allow all" on subjects  for all using (true) with check (true);
+create policy "Allow all" on scores    for all using (true) with check (true);
+create policy "Allow all" on activity  for all using (true) with check (true);
+create policy "Allow all" on config    for all using (true) with check (true);
+create policy "Allow all" on photos    for all using (true) with check (true);
+create policy "Allow all" on remarks   for all using (true) with check (true);
